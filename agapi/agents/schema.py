@@ -368,4 +368,22 @@ TOOLS_SCHEMA = [
             },
         },
     },
+    #SLURM Tools
+    {
+        "type": "function",
+        "function": {
+            "name": "submit_slurm_job",
+            "description": "Submit a job to the Slurm cluster.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "script": {
+                        "type": "string",
+                        "description": "Script to run on the Slurm cluster",
+                    },
+                },
+                "required": ["script"],
+            },
+        },
+    },
 ]

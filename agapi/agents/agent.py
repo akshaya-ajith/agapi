@@ -943,6 +943,7 @@ class AGAPIAgent:
 
         function_args["api_client"] = self.agapi_client
 
+
         functions = {
             "query_by_formula": query_by_formula,
             "query_by_elements": query_by_elements,
@@ -960,10 +961,14 @@ class AGAPIAgent:
             "substitute_atom": substitute_atom,
             "create_vacancy": create_vacancy,
             "protein_fold": protein_fold,
+            "submit_slurm_job": submit_slurm_job,
         }
 
         func = functions.get(function_name)
         if func:
+            if function_name == "submit_slurm_job":
+                function_args["slurm_client"] = getattr(self.agapi_client, "slurm_client", None)
+                # Ensure api_client is also passed if it expects it (or just left alone)
             return func(**function_args)
         else:
             # More helpful error message

@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 import base64
 from pathlib import Path
 from .client import AGAPIClient
+from .slurm import SlurmClient
 from .aliases import normalize_property_name
 
 
@@ -1531,3 +1532,27 @@ def list_jarvis_columns(
 
     except Exception as e:
         return {"error": f"Column listing error: {str(e)}"}
+
+def submit_slurm_job(
+    script: str,
+    *,
+    api_client: Any = None,
+    slurm_client: SlurmClient = None,
+) -> Dict[str, Any]:
+    """
+    Submit a job to the Slurm cluster.
+
+    Returns:
+        dict with job ID
+    """
+    if not slurm_client:
+        return {"error": "SLURM client is not configured."}
+
+    try:
+        job_id = slurm_client.submit_job(script)
+        return {"status": "success",
+            "job_id": job_id,
+            "message": f"Successfully submitted SLURM job with ID: {job_id}"}
+
+    except Exception as e:
+        return {"error": f"Failed to submit SLURM job: {str(e)}"}

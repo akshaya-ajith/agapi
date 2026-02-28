@@ -3,9 +3,10 @@ from typing import Dict, Any
 import httpx
 
 from .config import AgentConfig
+from .slurm import SlurmClient
+from dotenv import load_dotenv
 
-# In agapi/agents/client.py
-
+load_dotenv()
 
 class AGAPIClient:
     def __init__(
@@ -17,6 +18,12 @@ class AGAPIClient:
         self.api_key = api_key
         self.api_base = api_base
         self.timeout = timeout
+        slurm_host: str = os.getenv("SLURM_HOST")
+        slurm_user: str = os.getenv("SLURM_USER")
+        slurm_password: str = os.getenv("SLURM_PASSWORD")
+        self.slurm_client = SlurmClient(slurm_host, slurm_user, slurm_password) if slurm_host else None
+        if self.slurm_client:
+            self.slurm_client.connect()
 
     def request(self, endpoint: str, params: dict = None, method: str = "GET"):
         """
