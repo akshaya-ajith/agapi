@@ -320,6 +320,9 @@ class AGAPIAgent:
     def __init__(
         self,
         api_key: str = None,
+        slurm_host: str = None,
+        slurm_user: str = None,
+        slurm_password: str = None,
         model: str = None,
         temperature: float = None,
         max_iterations: int = None,
@@ -328,6 +331,9 @@ class AGAPIAgent:
         system_prompt: str = None,
     ):
         self.api_key = api_key or AgentConfig.DEFAULT_API_KEY
+        self.slurm_host = slurm_host
+        self.slurm_user = slurm_user
+        self.slurm_password = slurm_password
         self.model = model or AgentConfig.DEFAULT_MODEL
         self.temperature = (
             temperature
@@ -346,6 +352,11 @@ class AGAPIAgent:
         )
         self.openai_client = AsyncOpenAI(
             base_url=f"{self.api_base}/api", api_key=self.api_key
+        )
+        self.slurm_client = SlurmClient(
+            host=self.slurm_host,
+            user=self.slurm_user,
+            password=self.slurm_password,
         )
 
         # Store tool results for access after query

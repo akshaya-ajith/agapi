@@ -1545,6 +1545,8 @@ def submit_slurm_job(
     Returns:
         dict with job ID
     """
+    if slurm_client:
+        slurm_client.connect()
     if not slurm_client:
         return {"error": "SLURM client is not configured."}
 
