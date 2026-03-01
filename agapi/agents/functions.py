@@ -1551,6 +1551,7 @@ def submit_slurm_job(
         print("Submitting SLURM job...")
     if slurm_client:
         slurm_client.connect()
+        print("SLURM client connected.")
     if not slurm_client:
         return {"error": "SLURM client is not configured."}
 

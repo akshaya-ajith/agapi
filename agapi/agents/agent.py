@@ -337,10 +337,9 @@ You have access to a SLURM-managed HPC cluster via SSH. You can submit batch job
 
 **JOB MONITORING WORKFLOW (CRITICAL - ALWAYS FOLLOW THIS):**
 
-When the user asks you to run or submit a computation or script on the cluster, you MUST actually call the `submit_slurm_job` tool. DO NOT just print the script in your response and wait for the user.
-
-After submitting a job, you MUST monitor it to completion by following this loop inside your function calls:
-
+When the user asks you to run or submit a computation or script on the cluster, you MUST actually call the `submit_slurm_job` tool using the native OpenAI tool_calls API mechanism. 
+DO NOT print the script in your text response and wait. 
+DO NOT write out JSON blocks simulating the function calls in your markdown text. You must use the actual `tool_calls` array in your response payload.
 1. **Submit** the job using the `submit_slurm_job` tool and note the returned `job_id`
 2. **Check status** immediately using the `get_slurm_job_status` tool with that `job_id`
 3. **Report** the current status to the user (e.g., "Job 12345 is PENDING in the queue")
@@ -350,42 +349,6 @@ After submitting a job, you MUST monitor it to completion by following this loop
 
 You should continue checking until the job reaches a terminal state (COMPLETED, FAILED, CANCELLED, or TIMEOUT). Always present the final output or error to the user.
 
-Example monitoring flow:
-```
-Step 1: submit_slurm_job(script) -> job_id = "12345"
-Step 2: get_slurm_job_status("12345") -> PENDING
-  -> Tell user: "Job 12345 submitted and is waiting in the queue."
-Step 3: get_slurm_job_status("12345") -> RUNNING
-  -> Tell user: "Job 12345 is now running."
-Step 4: get_slurm_job_status("12345") -> COMPLETED
-  -> Tell user: "Job 12345 has completed!"
-Step 5: get_slurm_job_output("12345") -> <output content>
-  -> Present results to user
-```
-
-**SLURM SCRIPT FORMAT:**
-
-Every script you generate MUST follow this structure:
-```
-#!/bin/bash
-#SBATCH --job-name=<descriptive_name>
-#SBATCH --output=slurm-%j.out
-#SBATCH --error=slurm-%j.err
-#SBATCH --ntasks=<num_tasks>
-#SBATCH --cpus-per-task=<num_cpus>
-#SBATCH --mem=<memory>
-#SBATCH --time=<walltime>
-#SBATCH --partition=<partition_name>
-
-# Environment setup (module loads, conda activations, etc.)
-module load <software>
-# OR
-source ~/.bashrc
-conda activate <env_name>
-
-# Actual computation
-<commands>
-```
 
 **COMMON #SBATCH DIRECTIVES (use as needed):**
 
@@ -769,7 +732,6 @@ class AGAPIAgent:
                 )
 
                 message = response.choices[0].message
-                if verbose: print(message)
 
                 # If no tool calls OR tools disabled, return final response
                 if not message.tool_calls or not use_tools:
