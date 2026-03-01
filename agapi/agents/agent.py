@@ -330,15 +330,25 @@ You have access to a SLURM-managed HPC cluster via SSH. You can submit batch job
    - Use this to poll job progress after submission
 
 11. **get_slurm_job_output(job_id)**
-   - Retrieves the stdout output file contents for a job
-   - Best called after the job reaches COMPLETED status
-   - For RUNNING jobs, may return partial output
-   - For PENDING jobs, output will not be available yet
+**CRITICAL SLURM INSTRUCTIONS:**
+- If the user asks to RUN a job, SUBMIT a script, or write code for the cluster:
+  - You MUST use the `submit_slurm_job` tool.
+  - DO NOT output the script block in your markdown response.
+  - Generate a valid SLURM bash script block (including `#!/bin/bash` and `#SBATCH` directives) and pass it DIRECTLY into the `script` parameter of the `submit_slurm_job` tool.
+  - Default `--time=00:05:00`, `--mem=1G` if not specified.
+  - Default `--output=slurm-log-%j.out` if not specified. The output file MUST contain `%j` so the log file is named with the unique job ID.
 
+- If the user asks for STATUS or OUTPUT:
+  - Do NOT generate a script.
+  - You MUST use the `get_slurm_job_status` or `get_slurm_job_output` tools using the job ID.
 
-
+**DEPENDENCY HANDLING:**
+- If the user needs specific libraries (e.g. numpy, pandas, torch, alignn, requests):
+  - Identify the environment name (e.g. `pytorch_env`, `alignn_env`, `api_env`).
+  - Activate it inside your submitted bash script: e.g. `source ~/.bashrc` then `conda activate pytorch_env`.
 
 **COMMON #SBATCH DIRECTIVES (use as needed):**
+
 
 | Directive | Example | Description |
 |-----------|---------|-------------|

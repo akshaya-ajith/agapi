@@ -35,21 +35,29 @@ class SlurmClient:
         return exit_status, stdout.read().decode().strip(), stderr.read().decode().strip()
 
     def submit_job(self, script_content: str) -> str:
-        filename = f"job_{int(time.time())}.sh"
+        # Initial name to upload
+        temp_filename = f".temp_job_{int(time.time())}.sh"
 
         try:
-            with self.sftp.file(filename, 'w') as f:
+            with self.sftp.file(temp_filename, 'w') as f:
                 f.write(script_content)
         except Exception as e:
             raise Exception(f"Failed to upload script via SFTP: {e}")
 
-        code, out, err = self._run_command(f"sbatch {filename}")
+        code, out, err = self._run_command(f"sbatch {temp_filename}")
 
         if code != 0:
+            self._run_command(f"rm {temp_filename}")
             raise Exception(f"sbatch failed: {err}")
 
         try:
             job_id = out.split()[-1]
+            
+            # Rename the script to include date and job ID
+            date_str = time.strftime("%Y%m%d")
+            final_filename = f"job_{date_str}_{job_id}.sh"
+            self._run_command(f"mv {temp_filename} {final_filename}")
+            
         except IndexError:
             raise Exception(f"Could not parse job ID from sbatch output: {out}")
 
