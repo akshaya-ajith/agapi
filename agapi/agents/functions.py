@@ -1537,6 +1537,7 @@ def submit_slurm_job(
     script: str,
     *,
     api_client: Any = None,
+    debug: bool = True,
     slurm_client: SlurmClient = None,
 ) -> Dict[str, Any]:
     """
@@ -1545,6 +1546,9 @@ def submit_slurm_job(
     Returns:
         dict with job ID
     """
+
+    if debug:
+        print("Submitting SLURM job...")
     if slurm_client:
         slurm_client.connect()
     if not slurm_client:
@@ -1558,3 +1562,67 @@ def submit_slurm_job(
 
     except Exception as e:
         return {"error": f"Failed to submit SLURM job: {str(e)}"}
+
+
+def get_slurm_job_status(
+    job_id: str,
+    *,
+    api_client: Any = None,
+    slurm_client: SlurmClient = None,
+) -> Dict[str, Any]:
+    """
+    Check the current status of a SLURM job.
+
+    Args:
+        job_id: The SLURM job ID to check (returned by submit_slurm_job)
+
+    Returns:
+        dict with job_id and status (PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, etc.)
+    """
+    if slurm_client:
+        slurm_client.connect()
+    if not slurm_client:
+        return {"error": "SLURM client is not configured."}
+
+    try:
+        status = slurm_client.get_job_status(job_id)
+        return {
+            "status": "success",
+            "job_id": job_id,
+            "job_status": status,
+            "message": f"Job {job_id} status: {status}",
+        }
+    except Exception as e:
+        return {"error": f"Failed to get job status: {str(e)}"}
+
+
+def get_slurm_job_output(
+    job_id: str,
+    *,
+    api_client: Any = None,
+    slurm_client: SlurmClient = None,
+) -> Dict[str, Any]:
+    """
+    Retrieve the stdout output of a completed SLURM job.
+
+    Args:
+        job_id: The SLURM job ID whose output to retrieve
+
+    Returns:
+        dict with job_id and output content
+    """
+    if slurm_client:
+        slurm_client.connect()
+    if not slurm_client:
+        return {"error": "SLURM client is not configured."}
+
+    try:
+        output = slurm_client.get_job_output(job_id)
+        return {
+            "status": "success",
+            "job_id": job_id,
+            "output": output,
+            "message": f"Retrieved output for job {job_id}",
+        }
+    except Exception as e:
+        return {"error": f"Failed to get job output: {str(e)}"}

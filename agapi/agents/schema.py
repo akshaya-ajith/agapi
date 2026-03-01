@@ -373,16 +373,50 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "submit_slurm_job",
-            "description": "Submit a job to the Slurm cluster.",
+            "description": "Submit a job to the Slurm cluster. The script parameter must be a fully self-contained bash script including #!/bin/bash shebang and all #SBATCH directives. Returns a job ID that can be used with get_slurm_job_status and get_slurm_job_output.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "script": {
                         "type": "string",
-                        "description": "Script to run on the Slurm cluster",
+                        "description": "Complete bash script content to submit via sbatch, including shebang line (#!/bin/bash) and all #SBATCH directives for resource allocation",
                     },
                 },
                 "required": ["script"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_slurm_job_status",
+            "description": "Check the current status of a previously submitted SLURM job. Returns the job state: PENDING (waiting in queue), RUNNING (currently executing), COMPLETED (finished successfully), FAILED (exited with error), CANCELLED (cancelled by user or system), or TIMEOUT (exceeded walltime). Use this to monitor job progress after submission.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "job_id": {
+                        "type": "string",
+                        "description": "The SLURM job ID returned by submit_slurm_job",
+                    },
+                },
+                "required": ["job_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_slurm_job_output",
+            "description": "Retrieve the stdout output of a SLURM job. Best used after the job has COMPLETED. For RUNNING jobs, may return partial output. For PENDING jobs, output will not be available yet. Returns the contents of the job's output file (typically slurm-<job_id>.out).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "job_id": {
+                        "type": "string",
+                        "description": "The SLURM job ID whose output to retrieve",
+                    },
+                },
+                "required": ["job_id"],
             },
         },
     },
