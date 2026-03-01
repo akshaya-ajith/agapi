@@ -67,9 +67,36 @@ class SlurmClient:
         code, out, err = self._run_command(f"squeue -j {job_id} -h -o %T")
 
         if not out:
-            code_sacct, out_sacct, _ = self._run_command(f"sacct -j {job_id} -n -o State")
+            # Job is no longer in the queue — check sacct for final state and exit code
+            # Use JobID format to get both the allocation and batch step
+            code_sacct, out_sacct, _ = self._run_command(
+                f"sacct -j {job_id} -n -o JobID,State,ExitCode -P"
+            )
+            print(f"sacct output: {out_sacct}")
             if out_sacct:
-                return out_sacct.split()[0].strip()
+                # sacct returns lines like:
+                #   104|COMPLETED|0:0      <- job allocation (always exit 0)
+                #   104.batch|COMPLETED|1:0 <- batch step (actual script exit code)
+                # We prefer the .batch line for the real exit code
+                state = "COMPLETED"
+                exit_code = 0
+                for line in out_sacct.strip().split("\n"):
+                    parts = line.split("|")
+                    if len(parts) >= 3:
+                        job_step = parts[0].strip()
+                        line_state = parts[1].strip()
+                        line_exit = parts[2].strip()
+                        if ".batch" in job_step:
+                            state = line_state
+                            exit_code = int(line_exit.split(":")[0])
+                            break
+                        elif job_step == str(job_id):
+                            state = line_state
+                            exit_code = int(line_exit.split(":")[0])
+
+                if state == "COMPLETED" and exit_code != 0:
+                    return f"SCRIPT_FAILED (exit code {exit_code})"
+                return state
             return "COMPLETED"
 
         return out.strip()

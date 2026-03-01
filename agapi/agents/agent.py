@@ -325,7 +325,8 @@ You have access to a SLURM-managed HPC cluster via SSH. You can submit batch job
 
 10. **get_slurm_job_status(job_id)**
    - Checks the current state of a submitted SLURM job
-   - Possible states: PENDING (queued), RUNNING (executing), COMPLETED (finished OK), FAILED (error exit), CANCELLED, TIMEOUT
+   - Possible states: PENDING (queued), RUNNING (executing), COMPLETED (finished OK), FAILED (killed by SLURM), SCRIPT_FAILED (script exited with non-zero code), CANCELLED, TIMEOUT
+   - SCRIPT_FAILED includes the exit code, e.g. "SCRIPT_FAILED (exit code 1)"
    - Use this to poll job progress after submission
 
 11. **get_slurm_job_output(job_id)**
@@ -766,6 +767,7 @@ class AGAPIAgent:
                 )
 
                 message = response.choices[0].message
+                if verbose: print(message)
 
                 # If no tool calls OR tools disabled, return final response
                 if not message.tool_calls or not use_tools:
@@ -1231,7 +1233,7 @@ class AGAPIAgent:
         func = functions.get(function_name)
         if func:
             if function_name in ("submit_slurm_job", "get_slurm_job_status", "get_slurm_job_output"):
-                function_args["slurm_client"] = getattr(self.agapi_client, "slurm_client", None)
+                function_args["slurm_client"] = getattr(self, "slurm_client", None)
             return func(**function_args)
         else:
             # More helpful error message
