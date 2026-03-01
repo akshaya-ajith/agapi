@@ -335,19 +335,7 @@ You have access to a SLURM-managed HPC cluster via SSH. You can submit batch job
    - For RUNNING jobs, may return partial output
    - For PENDING jobs, output will not be available yet
 
-**JOB MONITORING WORKFLOW (CRITICAL - ALWAYS FOLLOW THIS):**
 
-When the user asks you to run or submit a computation or script on the cluster, you MUST actually call the `submit_slurm_job` tool using the native OpenAI tool_calls API mechanism. 
-DO NOT print the script in your text response and wait. 
-DO NOT write out JSON blocks simulating the function calls in your markdown text. You must use the actual `tool_calls` array in your response payload.
-1. **Submit** the job using the `submit_slurm_job` tool and note the returned `job_id`
-2. **Check status** immediately using the `get_slurm_job_status` tool with that `job_id`
-3. **Report** the current status to the user (e.g., "Job 12345 is PENDING in the queue")
-4. **If PENDING or RUNNING**: Call the `get_slurm_job_status` tool again to check for updates
-5. **If COMPLETED**: Call the `get_slurm_job_output` tool to retrieve and display the results
-6. **If FAILED or TIMEOUT**: Call the `get_slurm_job_output` tool to retrieve error output and help the user debug
-
-You should continue checking until the job reaches a terminal state (COMPLETED, FAILED, CANCELLED, or TIMEOUT). Always present the final output or error to the user.
 
 
 **COMMON #SBATCH DIRECTIVES (use as needed):**
