@@ -4,6 +4,7 @@ from typing import Dict, Any, Union
 import asyncio
 from openai import AsyncOpenAI
 
+from .slurm import SlurmClient
 from .config import AgentConfig
 from .client import AGAPIClient
 from .schema import TOOLS_SCHEMA
