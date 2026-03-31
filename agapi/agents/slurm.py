@@ -109,6 +109,22 @@ class SlurmClient:
 
         return out.strip()
 
+    def get_job_history(self, limit: int = 20) -> str:
+        """Gets recent job history for the user using sacct."""
+        # Use -X to only show allocation, not individual steps, to keep it clean
+        # Use -o to output specific fields
+        # Use -n to remove headers so we can parse it initially or let the LLM see it with headers?
+        # Let's include headers for readability by the agent. So no -n.
+        # Format: JobID, JobName, State, ExitCode
+        cmd = f"sacct -X -o JobID,JobName,State,ExitCode -P | tail -n {limit + 1}"
+        code, out, err = self._run_command(cmd)
+        
+        if code != 0:
+            # Maybe sacct isn't available or failed
+            return f"Failed to get job history: {err}\nOutput: {out}"
+            
+        return out.strip()
+
     def get_job_output(self, job_id: str) -> str:
         pattern = self.job_files.get(job_id, "slurm-%j.out")
         outfile = pattern.replace("%j", job_id)

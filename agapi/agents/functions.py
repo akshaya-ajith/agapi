@@ -1509,6 +1509,104 @@ def openfold_predict(
 
 
 # ---------------------------------------------------------------------------
+# SLURM Sandboxes and History
+# ---------------------------------------------------------------------------
+
+def create_slurm_sandbox(
+    sandbox_name: str,
+    packages: list,
+    *,
+    api_client: Any = None,
+    slurm_client: SlurmClient = None,
+) -> Dict[str, Any]:
+    """Ensure a python venv sandbox exists and has packages installed."""
+    if not slurm_client:
+        return {"error": "SLURM client is not configured."}
+    
+    connected = slurm_client.connect()
+    if not connected:
+        if slurm_client.fallback_host:
+            slurm_client.host = slurm_client.fallback_host
+            connected = slurm_client.connect()
+        if not connected:
+            return {"error": f"Failed to connect to SLURM cluster at {slurm_client.host}."}
+
+    try:
+        from .sandbox import SandboxManager
+        manager = SandboxManager(slurm_client)
+        success = manager.ensure_sandbox(sandbox_name, packages)
+        
+        if success:
+            return {
+                "status": "success",
+                "sandbox_name": sandbox_name,
+                "packages_requested": packages,
+                "message": f"Successfully ensured sandbox '{sandbox_name}' exists with requested packages."
+            }
+        else:
+            return {"error": f"Failed to create or update sandbox '{sandbox_name}'"}
+    except Exception as e:
+        return {"error": f"Error managing sandbox: {str(e)}"}
+
+def list_slurm_sandboxes(
+    *,
+    api_client: Any = None,
+    slurm_client: SlurmClient = None,
+) -> Dict[str, Any]:
+    """List available python venv sandboxes."""
+    if not slurm_client:
+        return {"error": "SLURM client is not configured."}
+    
+    connected = slurm_client.connect()
+    if not connected:
+        if slurm_client.fallback_host:
+            slurm_client.host = slurm_client.fallback_host
+            connected = slurm_client.connect()
+        if not connected:
+            return {"error": f"Failed to connect to SLURM cluster at {slurm_client.host}."}
+
+    try:
+        from .sandbox import SandboxManager
+        manager = SandboxManager(slurm_client)
+        sandboxes = manager.list_sandboxes()
+        return {
+            "status": "success",
+            "sandboxes": sandboxes,
+            "count": len(sandboxes),
+            "message": f"Found {len(sandboxes)} sandboxes."
+        }
+    except Exception as e:
+        return {"error": f"Error listing sandboxes: {str(e)}"}
+
+def get_slurm_job_history(
+    limit: int = 20,
+    *,
+    api_client: Any = None,
+    slurm_client: SlurmClient = None,
+) -> Dict[str, Any]:
+    """Retrieve history of recently submitted jobs using sacct."""
+    if not slurm_client:
+        return {"error": "SLURM client is not configured."}
+    
+    connected = slurm_client.connect()
+    if not connected:
+        if slurm_client.fallback_host:
+            slurm_client.host = slurm_client.fallback_host
+            connected = slurm_client.connect()
+        if not connected:
+            return {"error": f"Failed to connect to SLURM cluster at {slurm_client.host}."}
+
+    try:
+        history = slurm_client.get_job_history(limit)
+        return {
+            "status": "success",
+            "history": history,
+            "message": f"Retrieved last {limit} jobs."
+        }
+    except Exception as e:
+        return {"error": f"Failed to get job history: {str(e)}"}
+
+# ---------------------------------------------------------------------------
 # JARVIS DFT: list all queryable property columns
 # ---------------------------------------------------------------------------
 
@@ -1535,6 +1633,7 @@ def list_jarvis_columns(
 
 def submit_slurm_job(
     script: str,
+    sandbox_name: str = None,
     *,
     api_client: Any = None,
     debug: bool = True,
@@ -1550,12 +1649,30 @@ def submit_slurm_job(
     if debug:
         print("Submitting SLURM job...")
     if slurm_client:
-        slurm_client.connect()
-        print("SLURM client connected.")
-    if not slurm_client:
+        connected = slurm_client.connect()
+        if not connected:
+            if slurm_client.fallback_host:
+                if debug:
+                    print(f"Primary connection failed. Trying fallback host: {slurm_client.fallback_host}...")
+                slurm_client.host = slurm_client.fallback_host
+                connected = slurm_client.connect()
+            
+            if not connected:
+                return {"error": f"Failed to connect to SLURM cluster at {slurm_client.host}."}
+        
+        if debug:
+            print("SLURM client connected.")
+    else:
         return {"error": "SLURM client is not configured."}
 
     try:
+        if sandbox_name:
+            if debug:
+                print(f"Wrapping script to use sandbox '{sandbox_name}'...")
+            from .sandbox import SandboxManager
+            manager = SandboxManager(slurm_client)
+            script = manager.wrap_job_script(script, sandbox_name)
+
         job_id = slurm_client.submit_job(script)
         return {"status": "success",
             "job_id": job_id,
@@ -1581,8 +1698,15 @@ def get_slurm_job_status(
         dict with job_id and status (PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, etc.)
     """
     if slurm_client:
-        slurm_client.connect()
-    if not slurm_client:
+        connected = slurm_client.connect()
+        if not connected:
+            if slurm_client.fallback_host:
+                slurm_client.host = slurm_client.fallback_host
+                connected = slurm_client.connect()
+            
+            if not connected:
+                return {"error": f"Failed to connect to SLURM cluster at {slurm_client.host}."}
+    else:
         return {"error": "SLURM client is not configured."}
 
     try:
@@ -1613,8 +1737,15 @@ def get_slurm_job_output(
         dict with job_id and output content
     """
     if slurm_client:
-        slurm_client.connect()
-    if not slurm_client:
+        connected = slurm_client.connect()
+        if not connected:
+            if slurm_client.fallback_host:
+                slurm_client.host = slurm_client.fallback_host
+                connected = slurm_client.connect()
+            
+            if not connected:
+                return {"error": f"Failed to connect to SLURM cluster at {slurm_client.host}."}
+    else:
         return {"error": "SLURM client is not configured."}
 
     try:

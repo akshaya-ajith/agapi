@@ -28,6 +28,9 @@ from .functions import (
     submit_slurm_job,
     get_slurm_job_status,
     get_slurm_job_output,
+    create_slurm_sandbox,
+    list_slurm_sandboxes,
+    get_slurm_job_history,
 )
 
 
@@ -538,6 +541,7 @@ class AGAPIAgent:
         slurm_host: str = None,
         slurm_user: str = None,
         slurm_password: str = None,
+        slurm_fallback_host: str = None,
         model: str = None,
         temperature: float = None,
         max_iterations: int = None,
@@ -549,6 +553,7 @@ class AGAPIAgent:
         self.slurm_host = slurm_host
         self.slurm_user = slurm_user
         self.slurm_password = slurm_password
+        self.slurm_fallback_host = slurm_fallback_host
         self.model = model or AgentConfig.DEFAULT_MODEL
         self.temperature = (
             temperature
@@ -573,6 +578,8 @@ class AGAPIAgent:
             user=self.slurm_user,
             password=self.slurm_password,
         )
+        if self.slurm_fallback_host:
+            self.slurm_client.set_fallback_host(self.slurm_fallback_host)
 
         # Store tool results for access after query
         self.last_tool_results = []
@@ -1190,11 +1197,21 @@ class AGAPIAgent:
             "submit_slurm_job": submit_slurm_job,
             "get_slurm_job_status": get_slurm_job_status,
             "get_slurm_job_output": get_slurm_job_output,
+            "create_slurm_sandbox": create_slurm_sandbox,
+            "list_slurm_sandboxes": list_slurm_sandboxes,
+            "get_slurm_job_history": get_slurm_job_history,
         }
 
         func = functions.get(function_name)
         if func:
-            if function_name in ("submit_slurm_job", "get_slurm_job_status", "get_slurm_job_output"):
+            if function_name in (
+                "submit_slurm_job", 
+                "get_slurm_job_status", 
+                "get_slurm_job_output",
+                "create_slurm_sandbox",
+                "list_slurm_sandboxes",
+                "get_slurm_job_history"
+            ):
                 function_args["slurm_client"] = getattr(self, "slurm_client", None)
             return func(**function_args)
         else:

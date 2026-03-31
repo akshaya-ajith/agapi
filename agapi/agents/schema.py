@@ -372,6 +372,56 @@ TOOLS_SCHEMA = [
     {
         "type": "function",
         "function": {
+            "name": "create_slurm_sandbox",
+            "description": "Ensure a Python venv sandbox exists on the Slurm cluster, and install the specified packages. Useful for isolating dependencies for specific jobs.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sandbox_name": {
+                        "type": "string",
+                        "description": "Name of the sandbox (e.g., 'torch_env')",
+                    },
+                    "packages": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of python packages to install via pip (e.g., ['numpy', 'torch'])",
+                    },
+                },
+                "required": ["sandbox_name", "packages"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_slurm_sandboxes",
+            "description": "List all available Python venv sandboxes on the Slurm cluster.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_slurm_job_history",
+            "description": "Get the history of recent jobs submitted to the SLURM cluster. Includes JobID, JobName, State, and ExitCode.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of recent jobs to return (default: 20).",
+                        "default": 20,
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "submit_slurm_job",
             "description": "Submit a job to the Slurm cluster. The script parameter must be a fully self-contained bash script including #!/bin/bash shebang and all #SBATCH directives. Returns a job ID that can be used with get_slurm_job_status and get_slurm_job_output.",
             "parameters": {
@@ -380,6 +430,10 @@ TOOLS_SCHEMA = [
                     "script": {
                         "type": "string",
                         "description": "Complete bash script content to submit via sbatch, including shebang line (#!/bin/bash) and all #SBATCH directives for resource allocation",
+                    },
+                    "sandbox_name": {
+                        "type": "string",
+                        "description": "Optional name of a Python venv sandbox to activate before running the script. Use create_slurm_sandbox to create one if needed.",
                     },
                 },
                 "required": ["script"],
